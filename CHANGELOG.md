@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.7.0 | 2015-05-15
+* add: add metadata to errors.
+* internal: no need for build script
+* internal: bump minimum version of eslint
+
 ## v0.6.0 | 2015-05-06
 * table of contents update
 * update npmignore
@@ -15,4 +20,5 @@
 
 ### 0.5.1
 Init
+
 
