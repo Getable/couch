@@ -4,8 +4,15 @@ var request = require('request')
   , qs = require('querystring')
   , jsonreq = request.defaults({json: true})
 
-function makeError (err, resp) {
-  var errObject = new Error(resp.statusCode + ' ' + err.reason)
+function makeError (err, resp, meta) {
+  var errMessage = resp.statusCode + ' ' + err.reason
+    , errObject
+
+  if (meta) {
+    errMessage += '\n' + JSON.stringify(meta, null, 2)
+  }
+
+  errObject = new Error(errMessage)
 
   // for backward compatbility, we'll add a reason to the error object so that
   // err.reason will continue to work
@@ -31,7 +38,7 @@ Couch.prototype.get = function (id, cb) {
   request({url: this.url + encodeURIComponent(id), json: true}, function (err, resp, doc) {
     if (err) return cb(err)
     if (resp.statusCode !== 200) {
-      return cb(makeError(doc, resp))
+      return cb(makeError(doc, resp, {get: id}))
     }
     cb(null, doc)
   })
@@ -44,8 +51,8 @@ Couch.prototype.post = function (doc, cb) {
     if (e) return cb(e)
     info.statusCode = resp.statusCode
     if ((doc._deleted && resp.statusCode !== 200) ||
-      (!doc._deleted && resp.statusCode !== 201)) return cb(makeError(info, resp))
-    if (!info.rev) return cb(makeError(info, resp))
+      (!doc._deleted && resp.statusCode !== 201)) return cb(makeError(info, resp, {post: doc}))
+    if (!info.rev) return cb(makeError(info, resp, {post: doc}))
     if (cb) cb(null, info)
   })
 }
@@ -66,7 +73,7 @@ Couch.prototype.delete = function (id, cb) {
         return self.delete(id, cb)
       }
       if (resp.statusCode !== 200) {
-        return cb(makeError(info, resp))
+        return cb(makeError(info, resp, {delete: id}))
       }
       cb(null, info)
     })
@@ -87,8 +94,8 @@ Couch.prototype.force = function (doc, cb) {
   request.post({url: this.url + '_bulk_docs', json: {new_edits: false, docs: [doc]}}, function (e, resp, info) {
     if (e) return cb(e)
     info.statusCode = resp.statusCode
-    if (resp.statusCode !== 201) return cb(makeError(info, resp))
-    if (!info.rev) return cb(makeError(info, resp))
+    if (resp.statusCode !== 201) return cb(makeError(info, resp, {force: doc}))
+    if (!info.rev) return cb(makeError(info, resp, {force: doc}))
     if (cb) cb(null, info)
   })
 }
@@ -115,7 +122,7 @@ Couch.prototype.update = function (id, mutate, cb, retries) {
       if (e) return cb(e)
       if (resp.statusCode.toString().charAt(0) !== '2'){
         if (retryCount++ <= retryMax) return self.update(id, mutate, cb)
-        else return cb(makeError({error: resp.statusCode, reason: resp.statusCode + 'is not 2**'}), resp)
+        else return cb(makeError({error: resp.statusCode, reason: resp.statusCode + 'is not 2**'}), resp, {update: id})
       }
       cb(null, info)
     })
@@ -208,7 +215,7 @@ View.prototype.query = function (opts, cb) {
   r(function (e, resp, body) {
     if (e) return cb(e)
     if (resp.statusCode !== 200) {
-      return cb(makeError(body, resp))
+      return cb(makeError(body, resp, {query: opts}))
     }
     cb(null, body)
   })
@@ -244,7 +251,7 @@ module.exports.create = function (url, name, cb) {
   jsonreq.put(url, function (e, resp, body) {
     if (e) return cb(e)
     if (resp.statusCode !== 201) {
-      return cb(makeError(body, resp))
+      return cb(makeError(body, resp, {create: name}))
     }
     cb(null, body)
   })
