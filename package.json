@@ -57,7 +57,7 @@
   "devDependencies": {
     "dmn": "^1.0.5",
     "doctoc": "^0.13.0",
-    "eslint": "^0.20.0",
+    "eslint": "^0.21.1",
     "ghooks": "^0.3.2",
     "in-publish": "^1.1.1",
     "nodemon": "^1.2.1",
